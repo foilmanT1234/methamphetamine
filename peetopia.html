@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peetopia</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1b1b1b;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 14px;
+      border-radius: 12px;
+      width: 320px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #4caf50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    canvas {
+      display: block;
+      background: #7fd0ff;
+    }
+
+    .value {
+      float: right;
+      color: #ffd54f;
+    }
+  </style>
+</head>
+<body>
+
+<div id="ui">
+  <div>Misses: <span id="misses">0</span> / 10</div>
+  <div>Gravity Acceleration: <span id="gravityText"></span></div>
+
+  <label>
+    Initial Velocity
+    <span class="value" id="speedValue">25</span>
+  </label>
+  <input type="range" id="speedInput" min="0" max="80" value="25">
+
+  <label>
+    Angle
+    <span class="value" id="angleValue">45°</span>
+  </label>
+  <input type="range" id="angleInput" min="0" max="90" value="45">
+
+  <button id="shootBtn">Shoot!</button>
+
+  <div id="winScreen" style="display:none; margin-top:12px; text-align:center;">
+    <h3>🎉 SUCCESS!</h3>
+    <p>The pee went into the toilet.</p>
+    <button onclick="location.reload()">Next Stage</button>
+  </div>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let speed = 25;
+let angleDeg = 45;
+
+let shotCounter = 0;
+let activeShots = {};
+
+const speedInput = document.getElementById('speedInput');
+const angleInput = document.getElementById('angleInput');
+const speedValue = document.getElementById('speedValue');
+const angleValue = document.getElementById('angleValue');
+const missesText = document.getElementById('misses');
+const gravityText = document.getElementById('gravityText');
+const shootBtn = document.getElementById('shootBtn');
+
+function updateUI() {
+  speedValue.innerText = speed;
+  angleValue.innerText = angleDeg + '°';
+
+  speedInput.value = speed;
+  angleInput.value = angleDeg;
+}
+
+updateUI();
+
+speedInput.addEventListener('input', () => {
+  if (speedInput.value === '') {
+    return;
+  }
+
+  speed = Number(speedInput.value);
+  updateUI();
+});
+
+angleInput.addEventListener('input', () => {
+  if (angleInput.value === '') {
+    return;
+  }
+
+  angleDeg = Number(angleInput.value);
+  updateUI();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    shoot();
+  }
+});
+
+let misses = 0;
+
+let gravity = 9.8;
+
+const player = {
+  x: 100,
+  y: canvas.height - 120
+};
+
+let toilet = {
+  x: 700,
+  y: canvas.height - 140,
+  width: 60,
+  height: 80
+};
+
+let projectiles = [];
+let animating = false;
+
+function setupLevel() {
+  gravity = 0.15 + Math.random() * 0.35;
+
+  toilet.x = 450 + Math.random() * (canvas.width - 600);
+  toilet.y = canvas.height - 100 - Math.random() * 300;
+
+  gravityText.innerText = (gravity.toFixed(6) * 20).toFixed(2) + ' m/s²';
+}
+
+function shoot() {
+  if (animating) return;
+
+  if (speedInput.value === '' || angleInput.value === '') {
+    alert('Please enter velocity and angle.');
+    return;
+  }
+
+  const currentSpeed = speed;
+  const angle = angleDeg * Math.PI / 180;
+
+  const shotId = shotCounter++;
+  activeShots[shotId] = 10;
+
+  animating = true;
+
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      projectiles.push({
+        startX: player.x+25,
+        startY: player.y+25,
+        x: player.x,
+        y: player.y,
+        vx: currentSpeed * Math.cos(angle),
+        vy: -currentSpeed * Math.sin(angle),
+        time: 0,
+        alive: true,
+        shotId
+      });
+    }, i * 60);
+  }
+}
+
+shootBtn.addEventListener('click', shoot);
+
+function drawPlayer() {
+  const x = player.x;
+  const y = player.y;
+
+  //head
+  ctx.fillStyle = '#ffd6b0';
+  ctx.beginPath();
+  ctx.ellipse(x, y - 42, 18, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  //nose
+  ctx.beginPath();
+  ctx.moveTo(x + 15, y - 42);
+  ctx.lineTo(x + 24, y - 38);
+  ctx.lineTo(x + 15, y - 34);
+  ctx.fill();
+
+  //hair
+  ctx.fillStyle = '#2f241d';
+  ctx.beginPath();
+  ctx.arc(x - 2, y - 50, 17, Math.PI * 0.9, Math.PI * 2);
+  ctx.fill();
+
+  //eye
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(x + 8, y - 44, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  //body
+  ctx.fillStyle = '#1976d2';
+  ctx.beginPath();
+  ctx.roundRect(x - 18, y - 20, 36, 55, 10);
+  ctx.fill();
+
+  //legs
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 7;
+
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y + 35);
+  ctx.lineTo(x - 10, y + 68);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + 8, y + 35);
+  ctx.lineTo(x + 12, y + 68);
+  ctx.stroke();
+}
+
+let draggingArrow = false;
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const angle = angleDeg * Math.PI / 180;
+  const lineLength = speed * 3;
+
+  const tipX = player.x + 35 + Math.cos(angle) * lineLength;
+  const tipY = player.y + 10 - Math.sin(angle) * lineLength;
+
+  const dist = Math.hypot(mx - tipX, my - tipY);
+
+  if (dist < 20) {
+    draggingArrow = true;
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!draggingArrow) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const originX = player.x + 35;
+  const originY = player.y + 10;
+
+  const dx = mx - originX;
+  const dy = originY - my;
+
+  const distance = Math.hypot(dx, dy);
+
+  speed = distance / 3;
+
+  angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  updateUI();
+});
+
+canvas.addEventListener('mouseup', () => {
+  draggingArrow = false;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  draggingArrow = false;
+});
+
+function drawAimGuide() {
+  const angle = angleDeg * Math.PI / 180;
+
+  const lineLength = speed * 3;
+
+  const startX = player.x + 25;
+  const startY = player.y + 25;
+
+  const endX = startX + Math.cos(angle) * lineLength;
+  const endY = startY - Math.sin(angle) * lineLength;
+
+  ctx.strokeStyle = 'rgba(255,235,59,0.7)';
+  ctx.fillStyle = 'rgba(255,235,59,0.7)';
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+
+  const headLength = 15;
+  const headAngle = Math.PI / 7;
+
+  const leftX = endX - headLength * Math.cos(angle - headAngle);
+  const leftY = endY + headLength * Math.sin(angle - headAngle);
+
+  const rightX = endX - headLength * Math.cos(angle + headAngle);
+  const rightY = endY + headLength * Math.sin(angle + headAngle);
+
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(leftX, leftY);
+  ctx.lineTo(rightX, rightY);
+  ctx.closePath();
+  ctx.fill();
+
+  
+}
+
+function drawToilet() {
+  const x = toilet.x;
+  const y = toilet.y;
+
+  //base
+  ctx.fillStyle = '#f5f5f5';
+  ctx.beginPath();
+  ctx.roundRect(x + 12, y + 42, 44, 42, 14);
+  ctx.fill();
+
+  //bowl side shape
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 40);
+  ctx.quadraticCurveTo(x + 35, y + 20, x + 58, y + 38);
+  ctx.lineTo(x + 58, y + 55);
+  ctx.quadraticCurveTo(x + 30, y + 70, x + 10, y + 52);
+  ctx.closePath();
+  ctx.fill();
+
+  //seat
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.ellipse(x + 35, y + 38, 22, 10, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  //tank
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.roundRect(x + 48, y + 8, 20, 38, 6);
+  ctx.fill();
+
+  //outline
+  ctx.strokeStyle = '#c6c6c6';
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 40);
+  ctx.quadraticCurveTo(x + 35, y + 20, x + 58, y + 38);
+  ctx.lineTo(x + 58, y + 55);
+  ctx.quadraticCurveTo(x + 30, y + 70, x + 10, y + 52);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function updateProjectiles(delta) {
+  animating = false;
+
+  projectiles.forEach(p => {
+    if (!p.alive) return;
+
+    animating = true;
+
+    p.time += delta;
+
+    p.x = p.startX + p.vx * 12 * p.time;
+    p.y = p.startY + p.vy * 12 * p.time + 0.5 * gravity * 900 * p.time * p.time;
+
+    ctx.fillStyle = 'yellow';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (
+      p.x > toilet.x &&
+      p.x < toilet.x + toilet.width &&
+      p.y > toilet.y &&
+      p.y < toilet.y + 30
+    ) {
+      p.alive = false;
+
+      setTimeout(() => {
+        document.getElementById('winScreen').style.display = 'block';
+      }, 50);
+    }
+
+    if (p.y > canvas.height || p.x > canvas.width) {
+      if (p.alive) {
+        p.alive = false;
+
+        const id = p.shotId;
+
+        if (activeShots[id] > 0) {
+          activeShots[id]--;
+
+          if (activeShots[id] === 0) {
+            misses++;
+            missesText.innerText = misses;
+
+            delete activeShots[id];
+
+            if (misses >= 10) {
+              setTimeout(() => {
+                alert('Game Over! Reload the page to try again.');
+              }, 50);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  projectiles = projectiles.filter(p => p.alive);
+}
+
+let lastTime = 0;
+
+function gameLoop(timestamp) {
+  const delta = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#4caf50';
+  ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+  drawAimGuide();
+  drawPlayer();
+  drawToilet();
+  updateProjectiles(delta);
+
+  requestAnimationFrame(gameLoop);
+}
+
+setupLevel();
+requestAnimationFrame(gameLoop);
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  player.y = canvas.height - 120;
+  toilet.y = canvas.height - 140;
+});
+</script>
+
+</body>
+</html>

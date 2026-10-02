@@ -1,0 +1,239 @@
+
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainfuck</title>
+<link rel="icon", href="bf.png">
+<style>
+body {
+    font-family: monospace;
+    padding: 20px;
+    background: #f0f0f0;
+}
+
+textarea {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 10px;
+}
+
+#output {
+    white-space: pre;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+    height: 100px;
+    overflow-y: auto;
+}
+
+button {
+    margin-right: 5px;
+}
+
+#tape {
+    display: flex;
+    gap: 5px;
+    margin-top: 15px;
+    overflow-x: auto;
+}
+
+.cell {
+    width: 50px;
+    padding: 5px;
+    border: 1px solid #888;
+    text-align: center;
+    background: #fff;
+}
+
+.cell.active {
+    background: #ffd966;
+    border: 2px solid #f00;
+}
+
+#codeView {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.current {
+    background: #ffaaaa;
+}
+
+table {
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+td, th {
+    border: 1px solid #888;
+    padding: 6px 10px;
+}
+
+table th:first-child,
+table td:first-child {
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Brainfuck</h1>
+<br>
+
+<table>
+<tr><th>Command</th><th>Description</th></tr>
+<tr><td>&gt;</td><td>Increment pointer</td></tr>
+<tr><td>&lt;</td><td>Decrement pointer</td></tr>
+<tr><td>+</td><td>Increment value at pointer</td></tr>
+<tr><td>-</td><td>Decrement value at pointer</td></tr>
+<tr><td>.</td><td>Print value at pointer to output as a character</td></tr>
+<tr><td>,</td><td>Read one character from input into value at pointer</td></tr>
+<tr><td>[</td><td>Begin loop (continues while value at pointer is non-zero)</td></tr>
+<tr><td>]</td><td>End loop</td></tr>
+</table>
+<br>
+
+<textarea id="code" placeholder="Write your Brainfuck code here..."></textarea>
+
+<button onclick="runAll()">▶ Run</button>
+<button onclick="stepForward()">⏭ Step</button>
+<button onclick="stepBack()">⏮ Back</button>
+<button onclick="resetAll()">⟲ Reset</button>
+<br><br>
+
+<h3>Code (Execution View)</h3>
+<div id="codeView"></div>
+<br>
+
+<h3>Output</h3>
+<div id="output"></div>
+<br>
+
+<h3>Memory Tape</h3>
+<div id="tape"></div>
+
+<script>
+let tokens = [];
+let tape = [];
+let ptr = 0;
+let pc = 0;
+let jump = {};
+let output = "";
+let history = [];
+
+const TAPE_SIZE = 30000;
+const VIEW_RANGE = 10;
+
+function resetAll() {
+    tokens = document.getElementById("code").value.replace(/[^<>+\-.,\[\]]/g, '').split('');
+    tape = new Array(TAPE_SIZE).fill(0);
+    ptr = 0;
+    pc = 0;
+    output = "";
+    history = [];
+    jump = {};
+
+    let stack = [];
+    tokens.forEach((c, i) => {
+        if (c === '[') stack.push(i);
+        else if (c === ']') {
+            let j = stack.pop();
+            jump[i] = j;
+            jump[j] = i;
+        }
+    });
+
+    saveHistory();
+    render();
+}
+
+function saveHistory() {
+    history.push({
+        tape: [...tape],
+        ptr,
+        pc,
+        output
+    });
+}
+
+function restoreHistory() {
+    const s = history[history.length - 1];
+    tape = [...s.tape];
+    ptr = s.ptr;
+    pc = s.pc;
+    output = s.output;
+}
+
+function stepForward() {
+    if (tokens.length === 0) resetAll();
+    if (pc >= tokens.length) return;
+
+    saveHistory();
+
+    const c = tokens[pc];
+    switch (c) {
+        case '+': tape[ptr] = (tape[ptr] + 1) & 255; break;
+        case '-': tape[ptr] = (tape[ptr] - 1 + 256) & 255; break;
+        case '>': ptr++; break;
+        case '<': ptr--; break;
+        case '.': output += String.fromCharCode(tape[ptr]); break;
+        case ',':
+            const i = prompt("INPUT (1 char):");
+            tape[ptr] = i ? i.charCodeAt(0) : 0;
+            break;
+        case '[':
+            if (tape[ptr] === 0) pc = jump[pc];
+            break;
+        case ']':
+            if (tape[ptr] !== 0) pc = jump[pc];
+            break;
+    }
+    pc++;
+    render();
+}
+
+function stepBack() {
+    if (history.length <= 1) return;
+    history.pop();
+    restoreHistory();
+    render();
+}
+
+function runAll() {
+    if (tokens.length === 0) resetAll();
+    while (pc < tokens.length) {
+        stepForward();
+    }
+}
+
+function render() {
+    document.getElementById("output").textContent = output;
+
+    let html = "";
+    tokens.forEach((c, i) => {
+        html += i === pc ? `<span class="current">${c}</span>` : c;
+    });
+    document.getElementById("codeView").innerHTML = html;
+
+    const tapeDiv = document.getElementById("tape");
+    tapeDiv.innerHTML = "";
+
+    for (let i = ptr - VIEW_RANGE; i <= ptr + VIEW_RANGE; i++) {
+        if (i < 0 || i >= TAPE_SIZE) continue;
+        const d = document.createElement("div");
+        d.className = "cell" + (i === ptr ? " active" : "");
+        d.innerHTML = `<strong>${tape[i]}</strong>`;
+        tapeDiv.appendChild(d);
+    }
+}
+
+resetAll();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cookie Clicker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #2b1d0c;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 偽のロード画面のスタイル */
+    .fake-loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #140d05;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease;
+    }
+
+    .loading-title {
+      font-size: 2rem;
+      color: #f7d070;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    .loading-bar-container {
+      width: 300px;
+      height: 20px;
+      background-color: #2b1d0c;
+      border: 2px solid #5c3e1e;
+      border-radius: 10px;
+      overflow: hidden;
+      padding: 2px;
+    }
+
+    .loading-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #a66a20, #f7d070);
+      border-radius: 6px;
+      transition: width 0.1s linear;
+    }
+
+    .loading-text {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #c0a080;
+    }
+
+    /* 最上部：ニュースティッカーバー */
+    .news-bar {
+      height: 36px;
+      background-color: #140d05;
+      border-bottom: 2px solid #5c3e1e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 15px;
+      position: relative;
+      z-index: 100;
+    }
+
+    /* 画面一番左上の見えないデバッグトリガーボタン */
+    .debug-trigger {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 30px;
+      height: 36px;
+      cursor: pointer;
+      z-index: 200;
+    }
+
+    .news-content {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #e2b774;
+      text-align: center;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 10px;
+      transition: color 0.2s;
+    }
+
+    .news-content:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    /* 右上のボタン群エリア */
+    .top-right-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ボタン共通スタイル */
+    .control-btn, .lang-btn {
+      background: #3b2611;
+      color: #f7d070;
+      border: 1px solid #6b4723;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .control-btn:hover, .lang-btn:hover {
+      background: #5c3e1e;
+    }
+
+    /* メインコンテンツエリア（左右分割） */
+    .game-container {
+      flex: 1;
+      display: flex;
+      height: calc(100vh - 36px);
+      position: relative;
+    }
+
+    /* 左側：クッキーメインエリア */
+    .left-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #4a3319 0%, #1a1005 100%);
+      border-right: 4px solid #5c3e1e;
+      position: relative;
+      padding: 20px;
+    }
+
+    .bakery-name {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #e2b774;
+      margin-bottom: 12px;
+      cursor: pointer;
+      text-decoration: underline dotted #a66a20;
+      transition: color 0.2s, transform 0.1s;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .bakery-name:hover {
+      color: #fff;
+      transform: scale(1.03);
+    }
+
+    .stats {
+      text-align: center;
+      margin-bottom: 30px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 15px 30px;
+      border-radius: 12px;
+      border: 1px solid #6b4723;
+    }
+
+    .cookie-count {
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #f7d070;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    .cps-count {
+      font-size: 1.1rem;
+      color: #c0a080;
+      margin-top: 5px;
+    }
+
+    .cookie-button {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #e0a353 0%, #a66a20 70%, #6e410b 100%);
+      border: 8px solid #d48c37;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.05s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cookie-button:active {
+      transform: scale(0.95);
+    }
+
+    /* クッキーのチョコチップ模様 */
+    .chip {
+      position: absolute;
+      background-color: #3d2309;
+      border-radius: 40%;
+    }
+    .chip:nth-child(1) { width: 30px; height: 25px; top: 40px; left: 60px; transform: rotate(15deg); }
+    .chip:nth-child(2) { width: 25px; height: 30px; top: 120px; left: 40px; transform: rotate(-20deg); }
+    .chip:nth-child(3) { width: 35px; height: 28px; top: 70px; right: 50px; transform: rotate(45deg); }
+    .chip:nth-child(4) { width: 28px; height: 28px; bottom: 45px; right: 70px; transform: rotate(10deg); }
+    .chip:nth-child(5) { width: 32px; height: 22px; top: 110px; left: 105px; transform: rotate(-10deg); }
+
+    /* ゴールデンクッキーのスタイル */
+    .golden-cookie {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff7cc 0%, #ffd700 70%, #cca100 100%);
+      border: 6px solid #ffee55;
+      box-shadow: 0 0 25px #ffd700, inset 0 0 15px rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      z-index: 600;
+      animation: gcPulse 1.2s infinite alternate;
+      transition: transform 0.1s;
+    }
+
+    .golden-cookie:hover {
+      transform: scale(1.1);
+    }
+
+    @keyframes gcPulse {
+      0% { box-shadow: 0 0 15px #ffd700; }
+      100% { box-shadow: 0 0 30px #ffffff, 0 0 10px #ffea75; }
+    }
+
+    @keyframes gcFadeOut {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.2);
+      }
+    }
+
+    .golden-cookie.fade-out {
+      animation: gcFadeOut 0.5s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* バフ表示エリアのスタイル */
+    .buff-display {
+      margin-top: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ffd700;
+      text-shadow: 1px 1px 2px #000;
+      min-height: 24px;
+    }
+
+    /* クリック時浮き出るテキストアニメーション */
+    .click-number {
+      position: absolute;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 1px 1px 3px #000, 0 0 8px #f7d070;
+      pointer-events: none;
+      animation: floatUpFade 0.8s ease-out forwards;
+      z-index: 700;
+    }
+
+    @keyframes floatUpFade {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(-50px) scale(1.2);
+      }
+    }
+
+    /* 右側：施設・アップグレードショップエリア */
+    .right-pane {
+      width: 420px;
+      background-color: #1f1408;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pane-header {
+      padding: 12px;
+      background-color: #3b2611;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-bottom: 2px solid #5c3e1e;
+      color: #f7d070;
+    }
+
+    .shop-tabs {
+      display: flex;
+      background-color: #140d05;
+      border-bottom: 2px solid #5c3e1e;
+    }
+
+    .shop-tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      background-color: #2b1d0c;
+      color: #a08060;
+      border-bottom: 3px solid transparent;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .shop-tab:hover {
+      background-color: #3b2611;
+      color: #fff;
+    }
+
+    .shop-tab.active {
+      background-color: #1f1408;
+      color: #f7d070;
+      border-bottom: 3px solid #f7d070;
+    }
+
+    .upgrades-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      background-color: #170d04;
+      border-bottom: 2px solid #5c3e1e;
+      min-height: 60px;
+      align-items: center;
+    }
+
+    .upgrades-container:empty::before {
+      content: attr(data-empty-text);
+      color: #7a5a3a;
+      font-size: 0.85rem;
+      width: 100%;
+      text-align: center;
+    }
+
+    .upgrade-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #d4a359 0%, #8c5a20 100%);
+      border: 2px solid #f7d070;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      transition: transform 0.1s, filter 0.2s;
+      position: relative;
+    }
+
+    .upgrade-btn:hover {
+      transform: scale(1.08);
+      filter: brightness(1.15);
+    }
+
+    .upgrade-btn.disabled {
+      opacity: 0.4;
+      filter: grayscale(0.8);
+      cursor: pointer;
+    }
+
+    .shop-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .shop-list::-webkit-scrollbar {
+      width: 10px;
+    }
+    .shop-list::-webkit-scrollbar-track {
+      background: #140d05;
+    }
+    .shop-list::-webkit-scrollbar-thumb {
+      background: #5c3e1e;
+      border-radius: 5px;
+    }
+
+    .building-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2e1d0c;
+      border: 2px solid #4a3014;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .building-item:hover {
+      background: #3d2812;
+      border-color: #7a5022;
+    }
+
+    .building-item.disabled {
+      opacity: 0.5;
+      background: #1a1006;
+      border-color: #2a1a0a;
+      cursor: pointer;
+    }
+
+    .building-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .building-name {
+      font-weight: bold;
+      font-size: 1.05rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .building-icon {
+      font-size: 1.2rem;
+    }
+
+    .building-cost {
+      font-size: 0.9rem;
+      color: #f7d070;
+      margin-top: 3px;
+    }
+
+    .building-cps {
+      font-size: 0.8rem;
+      color: #a08060;
+      margin-top: 2px;
+    }
+
+    .building-count {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #8c6338;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .building-item:not(.disabled) .building-count {
+      color: #d4a359;
+    }
+
+    .falling-icon {
+      position: absolute;
+      font-size: 2rem;
+      pointer-events: none;
+      z-index: 999;
+      will-change: transform, top, left;
+    }
+
+    .lang-modal-overlay, .debug-modal-overlay, .save-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .lang-modal, .debug-modal, .save-modal {
+      background: #2b1d0c;
+      border: 3px solid #f7d070;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      max-width: 450px;
+      width: 90%;
+    }
+
+    .lang-modal h2, .debug-modal h2, .save-modal h2 {
+      font-size: 1.4rem;
+      color: #f7d070;
+      margin-bottom: 20px;
+    }
+
+    .lang-modal-buttons, .debug-modal-buttons, .save-modal-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .lang-select-btn, .debug-btn, .save-action-btn {
+      background: linear-gradient(135deg, #d4a359 0%, #8c5a20 100%);
+      color: #fff;
+      border: 2px solid #f7d070;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.2s;
+    }
+
+    .lang-select-btn:hover, .debug-btn:hover, .save-action-btn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.2);
+    }
+
+    .debug-input-group, .save-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .debug-input-group label, .save-input-group label {
+      font-size: 0.9rem;
+      color: #e2b774;
+    }
+
+    .debug-input-group input, .debug-input-group select, .save-input-group textarea {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #6b4723;
+      background: #140d05;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      resize: vertical;
+    }
+
+    .debug-input-group input:focus, .debug-input-group select:focus, .save-input-group textarea:focus {
+      border-color: #f7d070;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 偽のロード画面 -->
+  <div class="fake-loading-screen" id="loading-screen">
+    <div class="loading-title">🍪 Loading Cookie Clicker...</div>
+    <div class="loading-bar-container">
+      <div class="loading-bar-fill" id="loading-bar-fill"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Preparing dough... 0%</div>
+  </div>
+
+  <!-- 言語選択モーダルポップアップ -->
+  <div class="lang-modal-overlay" id="lang-modal" style="display: none;">
+    <div class="lang-modal">
+      <h2>Select Language / 言語選択</h2>
+      <div class="lang-modal-buttons">
+        <button class="lang-select-btn" onclick="selectInitialLanguage('ja')">日本語</button>
+        <button class="lang-select-btn" onclick="selectInitialLanguage('en')">English</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- デバッグ用モーダル -->
+  <div class="debug-modal-overlay" id="debug-modal" style="display: none;">
+    <div class="debug-modal">
+      <h2 id="debug-title">🛠️ Debug Menu</h2>
+      <div class="debug-input-group">
+        <label for="debug-cookies-input" id="debug-label-cookies">Cookies:</label>
+        <input type="number" id="debug-cookies-input" min="0" step="any">
+        
+        <label for="debug-cps-input" id="debug-label-cps">CPS:</label>
+        <input type="number" id="debug-cps-input" min="0" step="any">
+
+        <label for="debug-gc-select" id="debug-label-gc">Golden Cookie Effect:</label>
+        <select id="debug-gc-select">
+          <option value="frenzy">Frenzy (CPS ×7)</option>
+          <option value="clickFrenzy">Click Frenzy (Click ×777)</option>
+        </select>
+      </div>
+      <div class="debug-modal-buttons" style="flex-wrap: wrap;">
+        <button class="debug-btn" id="debug-btn-spawn-gc" onclick="spawnDebugGoldenCookie()">Spawn GC</button>
+        <button class="debug-btn" id="debug-btn-apply" onclick="applyDebugSettings()">Apply</button>
+        <button class="debug-btn" id="debug-btn-close" style="background: #5a2020;" onclick="closeDebugMenu()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- セーブ出力 (Export Save) モーダル -->
+  <div class="save-modal-overlay" id="export-modal" style="display: none;">
+    <div class="save-modal">
+      <h2 id="export-modal-title">Export Save</h2>
+      <div class="save-input-group">
+        <label id="export-label-desc">Copy your save string below:</label>
+        <textarea id="export-string-output" rows="5" readonly></textarea>
+      </div>
+      <div class="save-modal-buttons">
+        <button class="save-action-btn" id="export-btn-copy" onclick="copySaveString()">Copy</button>
+        <button class="save-action-btn" style="background: #5a2020;" id="export-btn-close" onclick="closeExportModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- セーブ読込 (Import Save) モーダル -->
+  <div class="save-modal-overlay" id="import-modal" style="display: none;">
+    <div class="save-modal">
+      <h2 id="import-modal-title">Import Save</h2>
+      <div class="save-input-group">
+        <label id="import-label-desc">Paste your save string below:</label>
+        <textarea id="import-string-input" rows="5" placeholder="Paste here..."></textarea>
+      </div>
+      <div class="save-modal-buttons">
+        <button class="save-action-btn" id="import-btn-paste" onclick="pasteSaveString()">Paste</button>
+        <button class="save-action-btn" id="import-btn-load" onclick="loadSaveString()">Load</button>
+        <button class="save-action-btn" style="background: #5a2020;" id="import-btn-close" onclick="closeImportModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最上部：ニュースエリア & 言語切り替え -->
+  <div class="news-bar">
+    <div class="debug-trigger" id="debug-trigger" onclick="openDebugMenu()"></div>
+    <div class="news-content" id="news-ticker" title="Click to view next news">Loading news...</div>
+    <div class="top-right-controls">
+      <button class="control-btn" id="export-save-btn" onclick="openExportModal()">Export Save</button>
+      <button class="control-btn" id="import-save-btn" onclick="openImportModal()">Import Save</button>
+      <button class="lang-btn" id="lang-toggle-btn">日本語</button>
+    </div>
+  </div>
+
+  <!-- メインゲームエリア -->
+  <div class="game-container" id="game-container">
+    <!-- 左パネル：クッキーとカウント -->
+    <div class="left-pane" id="left-pane">
+      <div class="bakery-name" id="bakery-name" title="Click to rename">Player's bakery</div>
+      <div class="stats">
+        <div class="cookie-count" id="cookies">0 cookies</div>
+        <div class="cps-count" id="cps">per second: 0</div>
+        <div class="buff-display" id="buff-display"></div>
+      </div>
+      <div class="cookie-button" id="cookie-btn">
+        <div class="chip"></div>
+        <div class="chip"></div>
+        <div class="chip"></div>
+        <div class="chip"></div>
+        <div class="chip"></div>
+      </div>
+    </div>
+
+    <!-- 右パネル：施設・アップグレードショップ -->
+    <div class="right-pane">
+      <div class="pane-header" id="upgrade-header">Upgrades</div>
+      <div class="upgrades-container" id="upgrades-container"></div>
+
+      <div class="pane-header" id="shop-header">Buildings</div>
+      <div class="shop-tabs">
+        <div class="shop-tab active" id="tab-buy" onclick="setShopMode('buy')">Buy</div>
+        <div class="shop-tab" id="tab-sell" onclick="setShopMode('sell')">Sell</div>
+      </div>
+      <div class="shop-list" id="shop-list"></div>
+    </div>
+  </div>
+
+  <script>
+    let loadProgress = 0;
+    const loadFill = document.getElementById('loading-bar-fill');
+    const loadText = document.getElementById('loading-text');
+    const loadScreen = document.getElementById('loading-screen');
+    const langModal = document.getElementById('lang-modal');
+
+    const loadingSteps = [
+      "Preparing dough...",
+      "Mixing chocolate chips...",
+      "Preheating the ovens...",
+      "Baking fresh cookies...",
+      "Almost ready..."
+    ];
+
+    const loadInterval = setInterval(() => {
+      loadProgress += Math.floor(Math.random() * 15) + 5;
+      if (loadProgress >= 100) {
+        loadProgress = 100;
+        clearInterval(loadInterval);
+        loadFill.style.width = '100%';
+        loadText.textContent = "Done! 100%";
+        
+        setTimeout(() => {
+          loadScreen.style.opacity = '0';
+          setTimeout(() => {
+            loadScreen.style.display = 'none';
+            langModal.style.display = 'flex';
+          }, 600);
+        }, 400);
+      } else {
+        loadFill.style.width = loadProgress + '%';
+        const stepIndex = Math.min(Math.floor((loadProgress / 100) * loadingSteps.length), loadingSteps.length - 1);
+        loadText.textContent = `${loadingSteps[stepIndex]} ${loadProgress}%`;
+      }
+    }, 120);
+
+    const i18n = {
+      en: {
+        cookiesUnit: "cookies",
+        perSecond: "per second",
+        upgradeTitle: "Upgrades",
+        shopTitle: "Buildings",
+        tabBuy: "Buy",
+        tabSell: "Sell",
+        costLabel: "Cost",
+        sellLabel: "Sell",
+        bakerySuffix: "'s bakery",
+        promptName: "Enter your bakery name:",
+        langBtnText: "日本語",
+        exportSaveText: "Export Save",
+        importSaveText: "Import Save",
+        exportModalTitle: "Export Save",
+        exportLabelDesc: "Copy your save string below:",
+        exportBtnCopy: "Copy",
+        exportBtnClose: "Close",
+        importModalTitle: "Import Save",
+        importLabelDesc: "Paste your save string below:",
+        importBtnPaste: "Paste",
+        importBtnLoad: "Load",
+        importBtnClose: "Close",
+        copiedAlert: "Save string copied to clipboard!",
+        loadSuccessAlert: "Game loaded successfully!",
+        loadFailAlert: "Failed to load save string. Invalid format.",
+        noUpgradesText: "No upgrades available",
+        upgradeEffect: "production doubled!",
+        clickUpgradeName: "Reinforced Finger",
+        clickUpgradeEffect: "Clicking power doubled!",
+        debugTitle: "🛠️ Debug Menu",
+        debugCookies: "Cookies:",
+        debugCps: "CPS:",
+        debugGc: "Golden Cookie Effect:",
+        debugSpawnGc: "Spawn GC",
+        debugApply: "Apply",
+        debugClose: "Close",
+        news: {
+          tier0: [
+            "Your cookies inspire pleasant thoughts.",
+            "Neighbors are starting to notice your delicious cookies.",
+            "News: Cookies are currently reported as delicious."
+          ],
+          tier1: [
+            "News: Cookie production skyrockets, boosting local economy.",
+            "News: Grandmas begin baking at full power. 'Needs more chocolate chips,' they claim.",
+            "News: The smell of freshly baked cookies reaches neighboring towns."
+          ],
+          tier2: [
+            "News: Scientists debate the possibility of infinite cookie generation.",
+            "News: People worldwide are replacing their staple diets with cookies.",
+            "News: Massive chocolate chip deposits discovered in cookie mines."
+          ],
+          tier3: [
+            "News: Cookies officially adopted as global currency.",
+            "News: Mysterious cookie waves detected from deep space.",
+            "News: A new cookie civilization emerges and flourishes."
+          ]
+        }
+      },
+      ja: {
+        cookiesUnit: "クッキー",
+        perSecond: "毎秒",
+        upgradeTitle: "アップグレード",
+        shopTitle: "施設ショップ",
+        tabBuy: "買う",
+        tabSell: "売る",
+        costLabel: "値段",
+        sellLabel: "売却額",
+        bakerySuffix: "のベーカリー",
+        promptName: "ベーカリーの名前を入力してください:",
+        langBtnText: "English",
+        exportSaveText: "セーブ出力",
+        importSaveText: "セーブ読込",
+        exportModalTitle: "セーブ出力 (Export Save)",
+        exportLabelDesc: "以下のセーブ文字列をコピーしてください:",
+        exportBtnCopy: "コピー",
+        exportBtnClose: "閉じる",
+        importModalTitle: "セーブ読込 (Import Save)",
+        importLabelDesc: "以下の欄にセーブ文字列をペーストしてください:",
+        importBtnPaste: "ペースト",
+        importBtnLoad: "ロード",
+        importBtnClose: "閉じる",
+        copiedAlert: "セーブ文字列をクリップボードにコピーしました！",
+        loadSuccessAlert: "セーブデータを正常にロードしました！",
+        loadFailAlert: "セーブデータのロードに失敗しました。形式が不正です。",
+        noUpgradesText: "利用可能なアップグレードがありません",
+        upgradeEffect: "の生産効率が2倍！",
+        clickUpgradeName: "強化フィンガー",
+        clickUpgradeEffect: "1クリックの獲得量が2倍！",
+        debugTitle: "🛠️ デバッグメニュー",
+        debugCookies: "クッキー数:",
+        debugCps: "CPS (毎秒生産量):",
+        debugGc: "ゴールデンクッキーの効果:",
+        debugSpawnGc: "GCを出現",
+        debugApply: "適用",
+        debugClose: "閉じる",
+        news: {
+          tier0: [
+            "あなたのクッキーはおいしそうな匂いがする。",
+            "近くの近所の人たちがあなたのクッキーに興味を示し始めている。",
+            "ニュース：クッキーは現在とても美味しいと評判です。"
+          ],
+          tier1: [
+            "ニュース：クッキーの生産量が急増し、地元経済を支えています。",
+            "ニュース：Grandmaたちがクッキーを焼き始めています。「もっとチョコチップを」とのこと。",
+            "ニュース：クッキーの匂いが隣町にまで届いているようです。"
+          ],
+          tier2: [
+            "ニュース：科学者たちがクッキーの無限生成の可能性について論議しています。",
+            "ニュース：世界中の人々がクッキーを主食にし始めました。",
+            "ニュース：クッキー鉱山から大量のチョコチップが発掘されました。"
+          ],
+          tier3: [
+            "ニュース：クッキーが世界通貨として採用されました。",
+            "ニュース：宇宙空間からクッキーの波動が観測されました。",
+            "ニュース：クッキー文明が誕生し、独自の法則で発展しています。"
+          ]
+        }
+      }
+    };
+
+    let currentLang = 'en';
+    let shopMode = 'buy';
+    let cookies = 0;
+    let totalCookiesEarned = 0;
+    let bakeryOwner = "Player";
+    let cookiesPerClick = 1;
+
+    // --- ゴールデンクッキー関連の状態変数（時間管理） ---
+    let goldenCookieTimer = null;
+    let goldenCookieExpireTimer = null;
+    let activeGoldenCookieElement = null;
+    
+    let frenzyMultiplier = 1;
+    let frenzyTimeLeft = 0; // 残り時間（秒）
+    let frenzyInterval = null;
+
+    let clickFrenzyMultiplier = 1;
+    let clickFrenzyTimeLeft = 0; // 残り時間（秒）
+    let clickFrenzyInterval = null;
+
+    function formatTimeMMSS(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function getUnlockedTiers(count) {
+      const milestones = [5, 10, 15, 25, 50, 75, 100];
+      const tiers = [];
+
+      milestones.forEach((m, idx) => {
+        if (count >= m) {
+          tiers.push(idx + 1);
+        }
+      });
+
+      if (count >= 150) {
+        const extraCount = Math.floor((count - 100) / 50);
+        for (let i = 1; i <= extraCount; i++) {
+          tiers.push(7 + i);
+        }
+      }
+      return tiers;
+    }
+
+    function getUnlockedClickTiers(totalBuildingsCount) {
+      const milestones = [10, 25, 50, 75, 100];
+      const tiers = [];
+
+      milestones.forEach((m, idx) => {
+        if (totalBuildingsCount >= m) {
+          tiers.push(idx + 1);
+        }
+      });
+
+      if (totalBuildingsCount >= 150) {
+        const extraCount = Math.floor((totalBuildingsCount - 100) / 50);
+        for (let i = 1; i <= extraCount; i++) {
+          tiers.push(5 + i);
+        }
+      }
+      return tiers;
+    }
+
+    const buildings = [
+      { id: 'cursor', name: 'Cursor', baseCost: 15, cost: 15, baseCps: 0.1, count: 0, multiplier: 1, icon: '👆' },
+      { id: 'grandma', name: 'Grandma', baseCost: 100, cost: 100, baseCps: 1, count: 0, multiplier: 1, icon: '👵' },
+      { id: 'farm', name: 'Farm', baseCost: 1100, cost: 1100, baseCps: 8, count: 0, multiplier: 1, icon: '🌾' },
+      { id: 'mine', name: 'Mine', baseCost: 12000, cost: 12000, baseCps: 47, count: 0, multiplier: 1, icon: '⛏️' },
+      { id: 'factory', name: 'Factory', baseCost: 130000, cost: 130000, baseCps: 260, count: 0, multiplier: 1, icon: '🏭' },
+      { id: 'bank', name: 'Bank', baseCost: 1400000, cost: 1400000, baseCps: 1400, count: 0, multiplier: 1, icon: '🏦' },
+      { id: 'temple', name: 'Temple', baseCost: 20000000, cost: 20000000, baseCps: 7800, count: 0, multiplier: 1, icon: '🏛️' },
+      { id: 'wizard', name: 'Wizard tower', baseCost: 330000000, cost: 330000000, baseCps: 44000, count: 0, multiplier: 1, icon: '🧙' },
+      { id: 'shipment', name: 'Shipment', baseCost: 5100000000, cost: 5100000000, baseCps: 260000, count: 0, multiplier: 1, icon: '🚀' },
+      { id: 'alchemy', name: 'Alchemy Lab', baseCost: 75000000000, cost: 75000000000, baseCps: 1600000, count: 0, multiplier: 1, icon: '⚗️' },
+      { id: 'portal', name: 'Portal', baseCost: 1000000000000, cost: 1000000000000, baseCps: 10000000, count: 0, multiplier: 1, icon: '🌀' },
+      { id: 'time', name: 'Time machine', baseCost: 14000000000000, cost: 14000000000000, baseCps: 65000000, count: 0, multiplier: 1, icon: '⏳' },
+      { id: 'antimatter', name: 'Antim. condenser', baseCost: 170000000000000, cost: 170000000000000, baseCps: 430000000, count: 0, multiplier: 1, icon: '⚛️' },
+      { id: 'prism', name: 'Prism', baseCost: 2100000000000000, cost: 2100000000000000, baseCps: 2900000000, count: 0, multiplier: 1, icon: '🌈' },
+      { id: 'chancemaker', name: 'Chancemaker', baseCost: 26000000000000000, cost: 26000000000000000, baseCps: 21000000000, count: 0, multiplier: 1, icon: '🎲' },
+      { id: 'fractal', name: 'Fractal engine', baseCost: 310000000000000000, cost: 310000000000000000, baseCps: 15000000000, count: 0, multiplier: 1, icon: '🌀' },
+      { id: 'javascript', name: 'Javascript console', baseCost: 71000000000000000000, cost: 71000000000000000000, baseCps: 1100000000000, count: 0, multiplier: 1, icon: '💻' },
+      { id: 'idleverse', name: 'Idleverse', baseCost: 12000000000000000000000, cost: 12000000000000000000000, baseCps: 8300000000000, count: 0, multiplier: 1, icon: '🌌' },
+      { id: 'cortex', name: 'Cortex baker', baseCost: 1900000000000000000000000, cost: 1900000000000000000000000, baseCps: 64000000000000, count: 0, multiplier: 1, icon: '🧠' },
+      { id: 'you', name: 'You', baseCost: 540000000000000000000000000, cost: 540000000000000000000000000, baseCps: 510000000000000, count: 0, multiplier: 1, icon: '👤' }
+    ];
+
+    const purchasedUpgrades = new Set();
+
+    const leftPane = document.getElementById('left-pane');
+    const gameContainer = document.getElementById('game-container');
+    const bakeryNameDisplay = document.getElementById('bakery-name');
+    const cookiesDisplay = document.getElementById('cookies');
+    const cpsDisplay = document.getElementById('cps');
+    const buffDisplay = document.getElementById('buff-display');
+    const cookieBtn = document.getElementById('cookie-btn');
+    const shopList = document.getElementById('shop-list');
+    const shopHeader = document.getElementById('shop-header');
+    const upgradeHeader = document.getElementById('upgrade-header');
+    const upgradesContainer = document.getElementById('upgrades-container');
+    const newsTicker = document.getElementById('news-ticker');
+    const langToggleBtn = document.getElementById('lang-toggle-btn');
+    const exportSaveBtn = document.getElementById('export-save-btn');
+    const importSaveBtn = document.getElementById('import-save-btn');
+    const debugModal = document.getElementById('debug-modal');
+    const exportModal = document.getElementById('export-modal');
+    const importModal = document.getElementById('import-modal');
+    const debugCookiesInput = document.getElementById('debug-cookies-input');
+    const debugCpsInput = document.getElementById('debug-cps-input');
+    const debugGcSelect = document.getElementById('debug-gc-select');
+    const exportStringOutput = document.getElementById('export-string-output');
+    const importStringInput = document.getElementById('import-string-input');
+    const tabBuy = document.getElementById('tab-buy');
+    const tabSell = document.getElementById('tab-sell');
+
+    function setShopMode(mode) {
+      shopMode = mode;
+      if (shopMode === 'buy') {
+        tabBuy.classList.add('active');
+        tabSell.classList.remove('active');
+      } else {
+        tabSell.classList.add('active');
+        tabBuy.classList.remove('active');
+      }
+      renderShop();
+    }
+
+    function updateDebugMenuLanguage() {
+      const texts = i18n[currentLang];
+      document.getElementById('debug-title').textContent = texts.debugTitle;
+      document.getElementById('debug-label-cookies').textContent = texts.debugCookies;
+      document.getElementById('debug-label-cps').textContent = texts.debugCps;
+      document.getElementById('debug-label-gc').textContent = texts.debugGc;
+      document.getElementById('debug-btn-spawn-gc').textContent = texts.debugSpawnGc;
+      document.getElementById('debug-btn-apply').textContent = texts.debugApply;
+      document.getElementById('debug-btn-close').textContent = texts.debugClose;
+    }
+
+    function openDebugMenu() {
+      updateDebugMenuLanguage();
+      debugCookiesInput.value = cookies;
+      debugCpsInput.value = getTotalCPS();
+      debugModal.style.display = 'flex';
+    }
+
+    function closeDebugMenu() {
+      debugModal.style.display = 'none';
+    }
+
+    function spawnDebugGoldenCookie() {
+      closeDebugMenu();
+      spawnGoldenCookie(debugGcSelect.value);
+    }
+
+    function applyDebugSettings() {
+      const newCookies = parseFloat(debugCookiesInput.value);
+      const newCps = parseFloat(debugCpsInput.value);
+
+      if (!isNaN(newCookies) && newCookies >= 0) {
+        cookies = newCookies;
+        if (cookies > totalCookiesEarned) {
+          totalCookiesEarned = cookies;
+        }
+      }
+
+      if (!isNaN(newCps) && newCps >= 0) {
+        if (newCps === 0) {
+          buildings.forEach(b => {
+            b.count = 0;
+            b.multiplier = 1;
+            b.cost = b.baseCost;
+          });
+        } else {
+          const cursor = buildings[0];
+          if (cursor.count === 0) cursor.count = 1;
+          cursor.multiplier = newCps / (cursor.baseCps * cursor.count);
+
+          buildings.slice(1).forEach(b => {
+            b.multiplier = 1;
+          });
+        }
+      }
+
+      updateDisplay();
+      renderShop();
+      renderUpgrades();
+      closeDebugMenu();
+    }
+
+    function openExportModal() {
+      const texts = i18n[currentLang];
+      document.getElementById('export-modal-title').textContent = texts.exportModalTitle;
+      document.getElementById('export-label-desc').textContent = texts.exportLabelDesc;
+      document.getElementById('export-btn-copy').textContent = texts.exportBtnCopy;
+      document.getElementById('export-btn-close').textContent = texts.exportBtnClose;
+
+      const saveData = {
+        cookies: cookies,
+        totalCookiesEarned: totalCookiesEarned,
+        bakeryOwner: bakeryOwner,
+        cookiesPerClick: cookiesPerClick,
+        purchasedUpgrades: Array.from(purchasedUpgrades),
+        buildings: buildings.map(b => ({ id: b.id, count: b.count, cost: b.cost, multiplier: b.multiplier }))
+      };
+
+      const jsonStr = JSON.stringify(saveData);
+      const encoded = btoa(encodeURIComponent(jsonStr));
+      exportStringOutput.value = encoded;
+      exportModal.style.display = 'flex';
+    }
+
+    function closeExportModal() {
+      exportModal.style.display = 'none';
+    }
+
+    function copySaveString() {
+      exportStringOutput.select();
+      exportStringOutput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(exportStringOutput.value).then(() => {
+        alert(i18n[currentLang].copiedAlert);
+      }).catch(err => {
+        document.execCommand('copy');
+        alert(i18n[currentLang].copiedAlert);
+      });
+    }
+
+    function openImportModal() {
+      const texts = i18n[currentLang];
+      document.getElementById('import-modal-title').textContent = texts.importModalTitle;
+      document.getElementById('import-label-desc').textContent = texts.importLabelDesc;
+      document.getElementById('import-btn-paste').textContent = texts.importBtnPaste;
+      document.getElementById('import-btn-load').textContent = texts.importBtnLoad;
+      document.getElementById('import-btn-close').textContent = texts.importBtnClose;
+
+      importStringInput.value = '';
+      importModal.style.display = 'flex';
+    }
+
+    function closeImportModal() {
+      importModal.style.display = 'none';
+    }
+
+    async function pasteSaveString() {
+      try {
+        const text = await navigator.clipboard.readText();
+        importStringInput.value = text;
+      } catch (err) {
+        alert("Clipboard read permission denied or not supported. Please paste manually using Ctrl+V / Cmd+V.");
+      }
+    }
+
+    function loadSaveString() {
+      try {
+        const raw = importStringInput.value.trim();
+        if (!raw) return;
+        const decoded = decodeURIComponent(atob(raw));
+        const data = JSON.parse(decoded);
+
+        if (typeof data.cookies === 'number' && Array.isArray(data.buildings)) {
+          cookies = data.cookies;
+          totalCookiesEarned = data.totalCookiesEarned ?? cookies;
+          bakeryOwner = data.bakeryOwner ?? "Player";
+          cookiesPerClick = data.cookiesPerClick ?? 1;
+
+          purchasedUpgrades.clear();
+          if (Array.isArray(data.purchasedUpgrades)) {
+            data.purchasedUpgrades.forEach(upgKey => purchasedUpgrades.add(upgKey));
+          }
+
+          data.buildings.forEach(savedB => {
+            const target = buildings.find(b => b.id === savedB.id);
+            if (target) {
+              target.count = savedB.count;
+              target.cost = savedB.cost;
+              target.multiplier = savedB.multiplier;
+            }
+          });
+
+          updateDisplay();
+          renderShop();
+          renderUpgrades();
+          closeImportModal();
+          alert(i18n[currentLang].loadSuccessAlert);
+        } else {
+          throw new Error("Invalid save structure");
+        }
+      } catch (e) {
+        alert(i18n[currentLang].loadFailAlert);
+      }
+    }
+
+    function selectInitialLanguage(lang) {
+      currentLang = lang;
+      if (currentLang === 'ja') {
+        bakeryOwner = "プレイヤー";
+      } else {
+        bakeryOwner = "Player";
+      }
+      langToggleBtn.textContent = i18n[currentLang].langBtnText;
+      exportSaveBtn.textContent = i18n[currentLang].exportSaveText;
+      importSaveBtn.textContent = i18n[currentLang].importSaveText;
+      langModal.style.display = 'none';
+
+      updateTexts();
+      updateDisplay();
+      renderShop();
+      renderUpgrades();
+      updateNews();
+      startGoldenCookieTimer();
+    }
+
+    function updateTexts() {
+      const texts = i18n[currentLang];
+      tabBuy.textContent = texts.tabBuy;
+      tabSell.textContent = texts.tabSell;
+      exportSaveBtn.textContent = texts.exportSaveText;
+      importSaveBtn.textContent = texts.importSaveText;
+    }
+
+    function formatNumberGeneric(num) {
+      const scales = [
+        { value: 1e36, name: "undecillion" },
+        { value: 1e33, name: "decillion" },
+        { value: 1e30, name: "nonillion" },
+        { value: 1e27, name: "octillion" },
+        { value: 1e24, name: "septillion" },
+        { value: 1e21, name: "sextillion" },
+        { value: 1e18, name: "quintillion" },
+        { value: 1e15, name: "quadrillion" },
+        { value: 1e12, name: "trillion" },
+        { value: 1e9,  name: "billion" },
+        { value: 1e6,  name: "million" }
+      ];
+
+      for (let scale of scales) {
+        if (num >= scale.value) {
+          let scaled = num / scale.value;
+          return parseFloat(scaled.toFixed(3)) + " " + scale.name;
+        }
+      }
+
+      return Math.floor(num).toLocaleString(currentLang === 'ja' ? 'ja-JP' : 'en-US');
+    }
+
+    function formatCPS(num) {
+      const scales = [
+        { value: 1e36, name: "undecillion" },
+        { value: 1e33, name: "decillion" },
+        { value: 1e30, name: "nonillion" },
+        { value: 1e27, name: "octillion" },
+        { value: 1e24, name: "septillion" },
+        { value: 1e21, name: "sextillion" },
+        { value: 1e18, name: "quintillion" },
+        { value: 1e15, name: "quadrillion" },
+        { value: 1e12, name: "trillion" },
+        { value: 1e9,  name: "billion" },
+        { value: 1e6,  name: "million" }
+      ];
+
+      for (let scale of scales) {
+        if (num >= scale.value) {
+          let scaled = num / scale.value;
+          return parseFloat(scaled.toFixed(3)) + " " + scale.name;
+        }
+      }
+
+      if (Number.isInteger(num)) {
+        return num.toLocaleString(currentLang === 'ja' ? 'ja-JP' : 'en-US');
+      } else {
+        return num.toFixed(1);
+      }
+    }
+
+    function formatInteger(num) {
+      return formatNumberGeneric(num);
+    }
+
+    function updateNews() {
+      const newsPool = i18n[currentLang].news;
+      let availableNews = [...newsPool.tier0];
+
+      if (totalCookiesEarned >= 100) availableNews.push(...newsPool.tier1);
+      if (totalCookiesEarned >= 10000) availableNews.push(...newsPool.tier2);
+      if (totalCookiesEarned >= 1000000) availableNews.push(...newsPool.tier3);
+
+      const randomNews = availableNews[Math.floor(Math.random() * availableNews.length)];
+      newsTicker.textContent = randomNews;
+    }
+
+    bakeryNameDisplay.addEventListener('click', () => {
+      const promptMsg = i18n[currentLang].promptName;
+      const newName = prompt(promptMsg, bakeryOwner);
+      if (newName !== null && newName.trim() !== '') {
+        bakeryOwner = newName.trim();
+        updateBakeryName();
+      }
+    });
+
+    function updateBakeryName() {
+      bakeryNameDisplay.textContent = `${bakeryOwner}${i18n[currentLang].bakerySuffix}`;
+    }
+
+    langToggleBtn.addEventListener('click', () => {
+      currentLang = currentLang === 'en' ? 'ja' : 'en';
+      langToggleBtn.textContent = i18n[currentLang].langBtnText;
+      exportSaveBtn.textContent = i18n[currentLang].exportSaveText;
+      importSaveBtn.textContent = i18n[currentLang].importSaveText;
+
+      if (bakeryOwner === "Player" && currentLang === 'ja') bakeryOwner = "プレイヤー";
+      else if (bakeryOwner === "プレイヤー" && currentLang === 'en') bakeryOwner = "Player";
+
+      updateTexts();
+      updateDisplay();
+      renderShop();
+      renderUpgrades();
+      updateNews();
+    });
+
+    newsTicker.addEventListener('click', () => {
+      updateNews();
+    });
+
+    function getBuildingCPS(b) {
+      return b.baseCps * b.multiplier;
+    }
+
+    function getTotalCPS() {
+      return buildings.reduce((sum, b) => sum + (getBuildingCPS(b) * b.count), 0);
+    }
+
+    function getTotalBuildingCount() {
+      return buildings.reduce((sum, b) => sum + b.count, 0);
+    }
+
+    function getAvailableUpgrades() {
+      const list = [];
+
+      buildings.forEach(b => {
+        const unlockedTiers = getUnlockedTiers(b.count);
+        unlockedTiers.forEach(tier => {
+          const key = `${b.id}_${tier}`;
+          if (!purchasedUpgrades.has(key)) {
+            const cost = b.baseCost * Math.pow(10, tier);
+            list.push({
+              key: key,
+              type: 'building',
+              building: b,
+              tier: tier,
+              cost: cost
+            });
+          }
+        });
+      });
+
+      const totalBuildings = getTotalBuildingCount();
+      const clickTiers = getUnlockedClickTiers(totalBuildings);
+      clickTiers.forEach(tier => {
+        const key = `click_${tier}`;
+        if (!purchasedUpgrades.has(key)) {
+          const cost = 50 * Math.pow(10, tier - 1);
+          list.push({
+            key: key,
+            type: 'click',
+            tier: tier,
+            cost: cost
+          });
+        }
+      });
+
+      list.sort((a, b) => a.cost - b.cost);
+
+      return list;
+    }
+
+    function renderUpgrades() {
+      upgradeHeader.textContent = i18n[currentLang].upgradeTitle;
+      upgradesContainer.setAttribute('data-empty-text', i18n[currentLang].noUpgradesText);
+      upgradesContainer.innerHTML = '';
+      const available = getAvailableUpgrades();
+
+      available.forEach(upg => {
+        const btn = document.createElement('div');
+        const isDisabled = cookies < upg.cost;
+        btn.className = `upgrade-btn ${isDisabled ? 'disabled' : ''}`;
+
+        let titleText = "";
+        if (upg.type === 'building') {
+          btn.textContent = upg.building.icon;
+          titleText = `${upg.building.name} Tier ${upg.tier}\n` +
+                      `${upg.building.name} ${i18n[currentLang].upgradeEffect}\n` +
+                      `${i18n[currentLang].costLabel}: ${formatInteger(upg.cost)}`;
+        } else if (upg.type === 'click') {
+          btn.textContent = "🖱️";
+          titleText = `${i18n[currentLang].clickUpgradeName} Tier ${upg.tier}\n` +
+                      `${i18n[currentLang].clickUpgradeEffect}\n` +
+                      `${i18n[currentLang].costLabel}: ${formatInteger(upg.cost)}`;
+        }
+
+        btn.title = titleText;
+        btn.onclick = () => buyUpgrade(upg);
+        upgradesContainer.appendChild(btn);
+      });
+    }
+
+    function buyUpgrade(upg) {
+      if (cookies >= upg.cost && !purchasedUpgrades.has(upg.key)) {
+        cookies -= upg.cost;
+        purchasedUpgrades.add(upg.key);
+
+        if (upg.type === 'building') {
+          upg.building.multiplier *= 2;
+        } else if (upg.type === 'click') {
+          cookiesPerClick *= 2;
+        }
+
+        updateDisplay();
+        renderShop();
+        renderUpgrades();
+      }
+    }
+
+    function renderShop() {
+      shopHeader.textContent = i18n[currentLang].shopTitle;
+      shopList.innerHTML = '';
+      
+      buildings.forEach((b, index) => {
+        const item = document.createElement('div');
+        const currentCPS = getBuildingCPS(b);
+        
+        let displayCost = b.cost;
+        let labelText = i18n[currentLang].costLabel;
+        let isDisabled = false;
+
+        if (shopMode === 'sell') {
+          displayCost = Math.floor(b.cost / 2);
+          labelText = i18n[currentLang].sellLabel;
+          isDisabled = b.count <= 0;
+        } else {
+          isDisabled = cookies < b.cost;
+        }
+
+        item.className = `building-item ${isDisabled ? 'disabled' : ''}`;
+        item.onclick = () => handleBuildingClick(index);
+
+        item.innerHTML = `
+          <div class="building-info">
+            <div class="building-name">
+              <span class="building-icon">${b.icon}</span>
+              <span>${b.name}</span>
+            </div>
+            <div class="building-cost">${labelText}: ${formatInteger(displayCost)}</div>
+            <div class="building-cps">+${formatCPS(currentCPS)} CPS</div>
+          </div>
+          <div class="building-count">${b.count}</div>
+        `;
+        shopList.appendChild(item);
+      });
+    }
+
+    function handleBuildingClick(index) {
+      if (shopMode === 'buy') {
+        buyBuilding(index);
+      } else {
+        sellBuilding(index);
+      }
+    }
+
+    function buyBuilding(index) {
+      const b = buildings[index];
+      if (cookies >= b.cost) {
+        cookies -= b.cost;
+        b.count++;
+        b.cost = Math.ceil(b.cost * 1.15);
+
+        spawnFallingIcon(b.icon);
+
+        updateDisplay();
+        renderShop();
+        renderUpgrades();
+      }
+    }
+
+    function sellBuilding(index) {
+      const b = buildings[index];
+      if (b.count > 0) {
+        const refund = Math.floor(b.cost / 2);
+        cookies += refund;
+        b.count--;
+        b.cost = Math.round(b.cost / 1.15);
+        if (b.cost < b.baseCost) {
+          b.cost = b.baseCost;
+        }
+
+        updateDisplay();
+        renderShop();
+        renderUpgrades();
+      }
+    }
+
+    function spawnFallingIcon(iconText) {
+      const iconElem = document.createElement('div');
+      iconElem.className = 'falling-icon';
+      iconElem.textContent = iconText;
+
+      const maxAvailableWidth = window.innerWidth - 420;
+      const startX = Math.random() * (maxAvailableWidth - 50);
+      const startY = 36;
+
+      iconElem.style.left = `${startX}px`;
+      iconElem.style.top = `${startY}px`;
+
+      document.body.appendChild(iconElem);
+
+      let posX = startX;
+      let posY = startY;
+      let velocityY = 2 + Math.random() * 3;
+      let velocityX = (Math.random() - 0.5) * 4;
+      let rotation = Math.random() * 360;
+      let rotationSpeed = (Math.random() - 0.5) * 10;
+      const gravity = 0.6;
+
+      function updateFall() {
+        velocityY += gravity;
+        posY += velocityY;
+        posX += velocityX;
+        rotation += rotationSpeed;
+
+        iconElem.style.transform = `translate(${posX - startX}px, ${posY - startY}px) rotate(${rotation}deg)`;
+
+        if (posY > window.innerHeight + 50) {
+          iconElem.remove();
+        } else {
+          requestAnimationFrame(updateFall);
+        }
+      }
+
+      requestAnimationFrame(updateFall);
+    }
+
+    // --- ゴールデンクッキーのロジック実装 ---
+    function startGoldenCookieTimer() {
+      if (goldenCookieTimer) clearTimeout(goldenCookieTimer);
+      const randomTime = (Math.floor(Math.random() * 150) + 90) * 1000; 
+      goldenCookieTimer = setTimeout(() => {
+        spawnGoldenCookie();
+      }, randomTime);
+    }
+
+    function spawnGoldenCookie(forcedType = null) {
+      if (activeGoldenCookieElement) {
+        activeGoldenCookieElement.remove();
+      }
+
+      const gc = document.createElement('div');
+      gc.className = 'golden-cookie';
+
+      const maxLeft = window.innerWidth - 460; 
+      const maxTop = window.innerHeight - 156;
+      const randomX = Math.floor(Math.random() * Math.max(50, maxLeft - 100)) + 50;
+      const randomY = Math.floor(Math.random() * Math.max(50, maxTop - 100)) + 50;
+
+      gc.style.left = `${randomX}px`;
+      gc.style.top = `${randomY}px`;
+
+      gc.onclick = () => {
+        clearTimeout(goldenCookieExpireTimer);
+        activateGoldenCookie(forcedType);
+        removeGoldenCookie(gc);
+      };
+
+      gameContainer.appendChild(gc);
+      activeGoldenCookieElement = gc;
+
+      goldenCookieExpireTimer = setTimeout(() => {
+        removeGoldenCookie(gc);
+      }, 13000);
+    }
+
+    function removeGoldenCookie(gcElem) {
+      if (gcElem && gcElem.parentNode) {
+        gcElem.classList.add('fade-out');
+        setTimeout(() => {
+          if (gcElem.parentNode) {
+            gcElem.remove();
+          }
+          if (activeGoldenCookieElement === gcElem) {
+            activeGoldenCookieElement = null;
+          }
+        }, 500);
+      }
+      startGoldenCookieTimer();
+    }
+
+    function activateGoldenCookie(forcedType = null) {
+      const effects = ['frenzy', 'clickFrenzy'];
+      const chosenEffect = forcedType || effects[Math.floor(Math.random() * effects.length)];
+
+      if (chosenEffect === 'frenzy') {
+        frenzyMultiplier = 7;
+        frenzyTimeLeft = 77;
+        if (frenzyInterval) clearInterval(frenzyInterval);
+        frenzyInterval = setInterval(() => {
+          frenzyTimeLeft--;
+          if (frenzyTimeLeft <= 0) {
+            clearInterval(frenzyInterval);
+            frenzyInterval = null;
+            frenzyMultiplier = 1;
+          }
+          updateBuffDisplay();
+        }, 1000);
+      } else if (chosenEffect === 'clickFrenzy') {
+        clickFrenzyMultiplier = 777;
+        clickFrenzyTimeLeft = 13;
+        if (clickFrenzyInterval) clearInterval(clickFrenzyInterval);
+        clickFrenzyInterval = setInterval(() => {
+          clickFrenzyTimeLeft--;
+          if (clickFrenzyTimeLeft <= 0) {
+            clearInterval(clickFrenzyInterval);
+            clickFrenzyInterval = null;
+            clickFrenzyMultiplier = 1;
+          }
+          updateBuffDisplay();
+        }, 1000);
+      }
+      updateBuffDisplay();
+    }
+
+    function updateBuffDisplay() {
+      let texts = [];
+      if (frenzyMultiplier > 1) {
+        texts.push(currentLang === 'ja' ? `フィンジー！ CPS ×7 (${formatTimeMMSS(frenzyTimeLeft)})` : `Frenzy! CPS x7 (${formatTimeMMSS(frenzyTimeLeft)})`);
+      }
+      if (clickFrenzyMultiplier > 1) {
+        texts.push(currentLang === 'ja' ? `クリックフィンジー！ クリック ×777 (${formatTimeMMSS(clickFrenzyTimeLeft)})` : `Click Frenzy! Click x777 (${formatTimeMMSS(clickFrenzyTimeLeft)})`);
+      }
+      buffDisplay.textContent = texts.join(' | ');
+    }
+
+    cookieBtn.addEventListener('click', (e) => {
+      const earned = cookiesPerClick * frenzyMultiplier * clickFrenzyMultiplier;
+      cookies += earned;
+      totalCookiesEarned += earned;
+
+      updateDisplay();
+      renderShop();
+      renderUpgrades();
+
+      const rect = cookieBtn.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const numElem = document.createElement('div');
+      numElem.className = 'click-number';
+      numElem.textContent = `+${formatInteger(earned)}`;
+      numElem.style.left = `${clickX}px`;
+      numElem.style.top = `${clickY}px`;
+      cookieBtn.appendChild(numElem);
+
+      setTimeout(() => {
+        numElem.remove();
+      }, 800);
+    });
+
+    let lastTimestamp = performance.now();
+    function gameLoop(timestamp) {
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (delta > 0 && delta < 1) {
+        const cps = getTotalCPS();
+        const earned = cps * delta * frenzyMultiplier;
+        if (earned > 0) {
+          cookies += earned;
+          totalCookiesEarned += earned;
+          updateDisplay();
+        }
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updateDisplay() {
+      const unit = i18n[currentLang].cookiesUnit;
+      const perSec = i18n[currentLang].perSecond;
+      cookiesDisplay.textContent = `${formatNumberGeneric(cookies)} ${unit}`;
+      cpsDisplay.textContent = `${perSec}: ${formatCPS(getTotalCPS() * frenzyMultiplier)}`;
+    }
+
+    updateBakeryName();
+    updateDisplay();
+    renderShop();
+    renderUpgrades();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
+```[cite: 14]
