@@ -4,15 +4,36 @@
   <meta charset="utf-8">
   <title>Methamphetamine - Home Page</title>
   <link rel="icon" href="images/xi-jinping.png">
+  
+  <script>
+    function aaa() {
+      var i = 1;
+      while (i < 1000) {
+        var n = prompt("Type " + i);
+          if (n != i && n != null) {
+            alert("Wrong number!!! :(");
+            alert("We are starting over...")
+            i = 1;
+          } else if (n == null) {
+            break;
+        } else {
+          i++;
+        }
+      }
+    }
+  </script>
+
 </head>
 <body>
-  <h1>Welcome to the Methamphetamine Home Page</h1>
-  <img src="images/meth.png" onclick="alert('DON&apos;T CLICK ME')">
-  <div>
-    <ul>
-        <li><a href="brainfuck.html">Brainfuck</a></li>
-        <li><a href="fake_cookie_clicker.html">Cookie Clicker</a></li>
-        <li><a href="peetopia.html">Peetopia</a></li>
-    </ul>
-  </div>
+  <h1>Welcome to the Methamphetamine</h1>
+  <img src="images/meth.png" width="500px" onclick="alert('So you have chosen... death'); aaa();">
+  <h2>
+    <div>
+        <ul>
+            <li><a href="brainfuck.html">Brainfuck</a></li>
+            <li><a href="fake_cookie_clicker.html">Cookie Clicker</a></li>
+            <li><a href="peetopia.html">Peetopia</a></li>
+        </ul>
+    </div>
+  </h2>
 </html>
