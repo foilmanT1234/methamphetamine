@@ -10,6 +10,14 @@
 
   <form id="login">
     <div>
+      <label for="formula"><b>Chemical Formula of Meth: </b></label><br>
+      Carbon: <input type="number" id="Carbon" name="Carbon" value="0" min="0" required><br>
+      Hydrogen: <input type="number" id="Hydrogen" name="Hydrogen" value="0" min="0" required><br>
+      Oxygen: <input type="number" id="Oxygen" name="Oxygen" value="0" min="0" required><br>
+      Nitrogen: <input type="number" id="Nitrogen" name="Nitrogen" value="0" min="0" required><br>
+    </div>
+    <br><br>
+    <div>
       <label for="password">Password: </label>
       <input type="password" id="password" name="password" required>
     </div>
@@ -19,19 +27,19 @@
     <button type="submit">Login</button>
   </form>
 
-  <p id="errMessage" style="color: red; display: none;">Incorrect password. No meth for you.</p>
+  <p id="errMessage" style="color: red; display: none;">Incorrect. No meth for you.</p>
 
   <script>
     const form = document.getElementById('login');
     const input = document.getElementById('password');
 
-    const password = "C10H15N";
+    const password = "i love meth";
 
     const targetpage = "homepage.html";
 
     form.addEventListener("submit", function(event) {
       event.preventDefault();
-      if (input.value === password) {
+      if (input.value === password && document.getElementById('Carbon').value == 10 && document.getElementById('Hydrogen').value == 15 && document.getElementById('Oxygen').value == 0 && document.getElementById('Nitrogen').value == 1) {
         window.location.href = targetpage; 
       } else {
         document.getElementById('errMessage').style.display = 'block';
