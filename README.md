@@ -1,2 +1,2 @@
-# Methamphetamine (Educational Purpose Only)
+# Methamphetamine (Educational Purpose Only) 🧊
 My Website
